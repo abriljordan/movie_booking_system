@@ -97,4 +97,17 @@ class Api::V1::Admin::MoviesControllerTest < ActionDispatch::IntegrationTest
     restored_movie = Movie.with_discarded.find(@movie.id)
     assert_not restored_movie.discarded?
   end
+
+  ## ❌ Edge Case: Admin tries to restore a movie that isn't deleted
+  test "admin cannot restore an active movie" do
+    patch restore_api_v1_admin_movie_path(@movie), headers: @headers
+    assert_response :unprocessable_entity # Assuming your controller prevents restoring non-deleted movies
+  end
+
+  ## ❌ Edge Case: Non-admin tries to restore a movie
+  test "non-admin cannot restore a movie" do
+    @movie.discard
+    patch restore_api_v1_admin_movie_path(@movie), headers: @invalid_headers
+    assert_response :forbidden
+  end
 end
