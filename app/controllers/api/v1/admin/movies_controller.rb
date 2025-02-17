@@ -50,6 +50,7 @@ class Api::V1::Admin::MoviesController < ApplicationController
   private
 
   def set_movie
+    # @movie = Movie.with_discarded.find_by(id: params[:id])
     @movie = Movie.kept.find_by(id: params[:id])
     render json: { error: "Movie not found" }, status: :not_found unless @movie
   end
