@@ -1,0 +1,11 @@
+theater_one:
+  id: 1
+  name: "Grand Cinema"
+  location: "City Center"
+  total_seats: 150
+
+theater_two:
+  id: 2
+  name: "Sunset Theater"
+  location: "Downtown"
+  total_seats: 200

@@ -1,0 +1,19 @@
+# test/fixtures/movies.yml
+movie_one:
+  id: 1
+  title: "Inception"
+  description: "A mind-bending thriller."
+  duration: 148
+  rating: "PG-13"
+  release_date: "2010-07-16"
+  genre: "Sci-Fi"
+
+
+movie_two:
+  id: 2
+  title: "Titanic"
+  description: "A tragic love story."
+  duration: 195
+  rating: "PG-13"
+  release_date: "2010-07-16"
+  genre: "Action"

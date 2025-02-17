@@ -1,0 +1,12 @@
+# test/fixtures/bookings.yml
+booking_one:
+  user_id: 1
+  showtime_id: 1
+  seats: 2
+  total_price: 30.00
+
+booking_two:
+  user_id: 2
+  showtime_id: 2
+  seats: 4
+  total_price: 60.00
