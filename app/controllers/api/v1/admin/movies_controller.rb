@@ -2,6 +2,7 @@ class Api::V1::Admin::MoviesController < ApplicationController
   before_action :authenticate_admin!
   before_action :set_movie, only: %i[update destroy restore]
 
+  # ✅ CREATE MOVIE
   def create
     @movie = Movie.new(movie_params)
     if @movie.save
@@ -13,6 +14,7 @@ class Api::V1::Admin::MoviesController < ApplicationController
     end
   end
 
+  # ✅ UPDATE MOVIE
   def update
     if @movie.update(movie_params)
       render json: MovieSerializer.new(@movie)
@@ -21,6 +23,7 @@ class Api::V1::Admin::MoviesController < ApplicationController
     end
   end
 
+  # ✅ SOFT DELETE MOVIE
   def destroy
     if @movie.showtimes.exists?
       render json: { error: "Cannot delete a movie with scheduled showtimes." }, status: :unprocessable_entity
@@ -31,6 +34,7 @@ class Api::V1::Admin::MoviesController < ApplicationController
     end
   end
 
+  # ✅ RESTORE SOFT DELETED MOVIE
   def restore
     if @movie.discarded?
       if @movie.undiscard
