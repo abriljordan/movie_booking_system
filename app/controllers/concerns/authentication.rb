@@ -7,30 +7,29 @@ module Authentication
 
   def authenticate_user!
     header = request.headers["Authorization"]
-    Rails.logger.debug "Authorization Header: #{header}"  # Debugging line
-
     return render json: { error: "Unauthorized: Token missing" }, status: :unauthorized unless header.present?
 
     token = header.split(" ").last
-    decoded = JsonWebToken.decode(token)
-    Rails.logger.debug "Decoded Payload: #{decoded}"  # Debugging line
 
-    if decoded.present? && decoded[:user_id]
-      @current_user = User.find_by(id: decoded[:user_id])
-      Rails.logger.debug "Authenticated User: #{@current_user.inspect}"  # Debugging line
-
-      render json: { error: "Unauthorized: User not found" }, status: :unauthorized unless @current_user
-    else
-      render json: { error: "Unauthorized: Invalid token payload" }, status: :unauthorized
+    begin
+      decoded = JsonWebToken.decode(token)
+    rescue StandardError => e
+      Rails.logger.debug "JWT Decode Error: #{e.message}"  # Debugging
+      return render json: { error: "Unauthorized: Invalid token" }, status: :unauthorized
     end
+
+    return render json: { error: "Unauthorized: Invalid token payload" }, status: :unauthorized unless decoded.present? && decoded[:user_id]
+
+    @current_user = User.find_by(id: decoded[:user_id])
+    render json: { error: "Unauthorized: User not found" }, status: :unauthorized unless @current_user
   end
 
+
   def authenticate_admin!
-    Rails.logger.debug "Current User: #{current_user.inspect}"  # Debugging
-    unless current_user&.admin?
-      Rails.logger.debug "Access Denied: Not an Admin"  # Debugging
-      render json: { error: "Forbidden: Admin access required" }, status: :forbidden
-    end
+    authenticate_user! # Ensure user is authenticated first
+
+    Rails.logger.debug "Current User: #{@current_user.inspect}"  # Debugging
+    render json: { error: "Forbidden: Admin access required" }, status: :forbidden unless @current_user&.admin?
   end
 
   def current_user

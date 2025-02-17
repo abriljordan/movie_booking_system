@@ -10,9 +10,14 @@ class Api::V1::Admin::MoviesControllerTest < ActionDispatch::IntegrationTest
 
   test "admin can create a movie" do
     assert_difference("Movie.count", 1) do
-      post api_v1_admin_movies_path,
-      params: { movie: { title: "New Movie", duration: 120, description: "New Movie description", release_date: "2010-07-16" } },
-      headers: @headers
+      post api_v1_admin_movies_path, params: {
+        movie: { title: "New Movie",
+        duration: 120,
+        description: "New Movie description",
+        release_date: "2010-07-16",
+        genre: "Adventure"
+        }
+      }, headers: @headers
     end
     assert_response :created
 
