@@ -2,6 +2,14 @@ class Api::V1::Admin::MoviesController < ApplicationController
   before_action :authenticate_admin!
   before_action :set_movie, only: %i[update destroy restore]
 
+  # ✅ Search and List Movies
+  def index
+    @movies = Movie.all
+
+    @movies = @movies.search(params[:search]) if params[:search].present?
+    render json: @movies
+  end
+
   # ✅ CREATE MOVIE
   def create
     @movie = Movie.new(movie_params)

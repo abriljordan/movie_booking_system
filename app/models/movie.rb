@@ -16,6 +16,8 @@ class Movie < ApplicationRecord
 
   before_discard :check_for_associated_showtimes # Prevent soft deletion if showtimes exist
 
+  # Scopes
+  scope :search, ->(kw) { where("LOWER(title) LIKE ?", "%#{kw.downcase}%")  if kw.present? }
 
 
   private
