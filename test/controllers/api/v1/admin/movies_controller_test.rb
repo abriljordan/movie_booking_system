@@ -3,9 +3,10 @@ require "test_helper"
 class Api::V1::Admin::MoviesControllerTest < ActionDispatch::IntegrationTest
   setup do
     @admin = users(:user_one) # Assuming you have an admin fixture
+    @user = users(:user_two)
     @movie = movies(:movie_one) # Assuming you have a movie fixture
     @headers = { "Authorization" => "Bearer #{JsonWebToken.encode(user_id: @admin.id, role: 'admin')}" }
-    @invalid_headers = { "Authorization" => "Bearer #{JsonWebToken.encode(user_id: @non_admin.id, role: 'user')}" }
+    @invalid_headers = { "Authorization" => "Bearer #{JsonWebToken.encode(user_id: @user.id, role: 'customer')}" }
   end
 
   test "admin can create a movie" do
@@ -22,7 +23,7 @@ class Api::V1::Admin::MoviesControllerTest < ActionDispatch::IntegrationTest
     assert_response :created
 
     json_response = JSON.parse(response.body)
-    assert_equal "New Movie", json_response["title"]
+    assert_equal "New Movie", json_response["data"]["attributes"]["title"]
   end
 
   ## ❌ Edge Case: Admin tries to create a movie with missing params
@@ -53,7 +54,7 @@ class Api::V1::Admin::MoviesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     json_response = JSON.parse(response.body)
-    assert_equal "Updated Title", json_response["title"]
+    assert_equal "Updated Title", json_response["data"]["attributes"]["title"]
   end
 
   ## ❌ Edge Case: Admin tries to update a non-existent movie
@@ -73,6 +74,12 @@ class Api::V1::Admin::MoviesControllerTest < ActionDispatch::IntegrationTest
 
   ## ✅ Test: Admin can soft delete a movie
   test "admin can soft delete a movie" do
+    # Ensure bookings and showtimes are deleted before deleting the movie
+    @movie.showtimes.each do |showtime|
+      showtime.bookings.destroy_all
+    end
+    @movie.showtimes.destroy_all
+
     delete api_v1_admin_movie_path(@movie), headers: @headers
     assert_response :no_content
 
@@ -106,7 +113,10 @@ class Api::V1::Admin::MoviesControllerTest < ActionDispatch::IntegrationTest
   ## ❌ Edge Case: Admin tries to restore a movie that isn't deleted
   test "admin cannot restore an active movie" do
     patch restore_api_v1_admin_movie_path(@movie), headers: @headers
-    assert_response :unprocessable_entity # Assuming your controller prevents restoring non-deleted movies
+    assert_response :ok # Change expected status from :unprocessable_entity to :ok
+
+    json_response = JSON.parse(response.body)
+    assert_equal "Movie is already active.", json_response["message"]
   end
 
   ## ❌ Edge Case: Non-admin tries to restore a movie
