@@ -7,7 +7,11 @@ class Api::V1::MoviesController < ApplicationController
   end
 
   def show
-    @movie = Movie.find(params[:id])
-    render json: MovieSerializer.new(@movie)
+    @movie = Movie.kept.find_by(id: params[:id])
+    if @movie
+      render json: MovieSerializer.new(@movie)
+    else
+      render json: { errors: [ "Movie not found" ] }, status: :not_found
+    end
   end
 end

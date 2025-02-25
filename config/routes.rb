@@ -1,34 +1,54 @@
 Rails.application.routes.draw do
   namespace :api, defaults: { format: :json } do
     namespace :v1 do
-      # Scoped user routes
+      # User routes (self-management)
       resources :users, only: %i[show create update destroy] do
-        resources :bookings, only: [ :index, :create, :show, :update, :destroy ] # Added commas
+        resources :bookings, only: %i[index create show update destroy] # User-specific bookings
       end
 
-      resources :bookings, only: [ :index ] # Admin can view all bookings
+      # Booking routes
+      resources :bookings, only: [ :index ] # Admin: View all bookings
 
-      resources :showtimes, only: %i[index show create update destroy] # Allow full CRUD for admins
+      # Showtime management
+      resources :showtimes, only: %i[index show create update destroy]
 
-      resources :movies, only: %i[index show] # Public-facing routes
-      resources :theaters, only: %i[index show] # Public-facing routes
+      # Public movie and theater routes
+      resources :movies, only: %i[index show] do
+        collection do
+          get :search # Public movie search
+          post :search
+        end
+      end
+
+      resources :theaters, only: %i[index show]
+
+      # Admin routes
       namespace :admin do
-        resources :movies, only: %i[create update destroy] do
-          member do
-            patch :restore
-          end
+        # Admin movie management
+        resources :movies, only: %i[index create update destroy] do
+          member { patch :restore }
+          collection {
+            get :search
+            post :search
+          } # Admin-specific movie search
         end
 
-        resources :theaters, only: %i[create update destroy] # Admin-specific theater routes
-        resources :showtimes, only: %i[create update destroy] # Add showtimes for admin
-        resources :bookings, only: %i[index create update destroy] do # Add bookings for admin
-          member do
-            patch :restore
-          end
+        # Admin theater and showtime management
+        resources :theaters, only: %i[create update destroy]
+        resources :showtimes, only: %i[create update destroy]
+
+        # Admin booking management
+        resources :bookings, only: %i[index create update destroy] do
+          member { patch :restore }
+          collection {
+            get :search
+            post :search
+          } # Admin-specific booking search
         end
       end
 
-      resources :tokens, only: [ :create ] # Authentication
+      # Authentication
+      resources :tokens, only: [ :create ]
     end
   end
 end

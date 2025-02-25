@@ -7,6 +7,7 @@ movie_one:
   rating: "PG-13"
   release_date: "2010-07-16"
   genre: "Sci-Fi"
+  discarded_at: ~ # Not soft-deleted
 
 
 movie_two:
@@ -17,3 +18,11 @@ movie_two:
   rating: "PG-13"
   release_date: "2010-07-16"
   genre: "Action"
+  discarded_at: ~ # Not soft-deleted
+
+deleted_movie:
+  title: "The Matrix"
+  duration: 136
+  description: "A sci-fi classic"
+  release_date: 1999-03-31
+  discarded_at: <%= 1.day.ago %> # This marks it as soft-deleted

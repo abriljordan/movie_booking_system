@@ -14,12 +14,16 @@ class Api::V1::Admin::MoviesControllerTest < ActionDispatch::IntegrationTest
       post api_v1_admin_movies_path, params: {
         movie: { title: "New Movie",
         duration: 120,
+        rating: "PG-13",
         description: "New Movie description",
-        release_date: "2010-07-16",
+        release_date: Date.today,
         genre: "Adventure"
         }
       }, headers: @headers
     end
+    puts "creating a movie"
+    puts Movie.all.inspect
+
     assert_response :created
 
     json_response = JSON.parse(response.body)
@@ -30,12 +34,24 @@ class Api::V1::Admin::MoviesControllerTest < ActionDispatch::IntegrationTest
   test "admin cannot create a movie with missing parameters" do
     post api_v1_admin_movies_path,
       params: { movie: { title: "", duration: nil } },
-      headers: @headers
+      headers: @headers,
+      as: :json # Ensure request is correctly formatted as JSON
+
     assert_response :unprocessable_entity
 
     json_response = JSON.parse(response.body)
-    assert_includes json_response["errors"], "Title can't be blank"
-    assert_includes json_response["errors"], "Duration can't be blank"
+
+    expected_errors = [
+      "Title can't be blank",
+      "Duration can't be blank",
+      "Duration is not a number",
+      "Description can't be blank",
+      "Release date can't be blank"
+    ]
+
+    expected_errors.each do |error|
+      assert_includes json_response["errors"], error
+    end
   end
 
    ## ❌ Edge Case: Non-admin tries to create a movie
@@ -124,5 +140,48 @@ class Api::V1::Admin::MoviesControllerTest < ActionDispatch::IntegrationTest
     @movie.discard
     patch restore_api_v1_admin_movie_path(@movie), headers: @invalid_headers
     assert_response :forbidden
+  end
+
+  test "should search movies by title" do
+    puts "🔥 Sending GET request to search movies..."
+
+    get search_api_v1_admin_movies_path, params: { query: "Inception" }, headers: @headers, as: :json
+    post search_api_v1_admin_movies_path, params: { query: "Inception" }, headers: @headers, as: :json
+
+    if response.request
+      puts response.request.method
+      puts response.request.fullpath
+    else
+      puts "🔥 Response request is nil!"
+    end
+
+    puts "🔥 Response status: #{response.status}"
+    puts "🔥 Response body: #{response.body}"
+
+    assert_response :success
+
+    json_response = JSON.parse(response.body)
+    assert_not_empty json_response["data"], "Expected movie data but got empty response"
+
+    # Additional assertion to check if the title matches
+    movie_titles = json_response["data"].map { |movie| movie["attributes"]["title"] }
+    assert_includes movie_titles, "Inception", "Expected 'Inception' to be in the search results"
+  end
+
+  test "should return error for unknown title" do
+    get search_api_v1_admin_movies_path, params: { query: "Unknown Movie" }, headers: @headers, as: :json
+    post search_api_v1_admin_movies_path, params: { query: "Unknown Movie" }, headers: @headers, as: :json
+
+    if response.request
+      puts response.request.method
+      puts response.request.fullpath
+    else
+      puts "🔥 Response request is nil!"
+    end
+
+    assert_response :not_found  # This ensures the response is 404
+
+    json_response = JSON.parse(response.body) rescue {}
+    assert_equal "Movie not found", json_response["error"], "Expected 'Movie not found' but got #{json_response}"
   end
 end

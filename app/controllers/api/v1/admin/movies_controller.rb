@@ -2,12 +2,40 @@ class Api::V1::Admin::MoviesController < ApplicationController
   before_action :authenticate_admin!
   before_action :set_movie, only: %i[update destroy restore]
 
-  # ✅ Search and List Movies
+  # ✅ List Movies
   def index
-    @movies = Movie.all
+    Rails.logger.info "Fetching all movies..."
 
-    @movies = @movies.search(params[:search]) if params[:search].present?
-    render json: @movies
+    movies = Movie.all
+    render json: MovieSerializer.new(movies).serializable_hash, status: :ok
+  rescue StandardError => e
+    Rails.logger.error "🔥 ERROR: #{e.message}"
+    render json: { error: e.message }, status: :bad_request
+  end
+
+  # ✅ Search Movies
+  def search
+    Rails.logger.info "🔥 SEARCH ACTION CALLED - Method: #{request.method}"
+    Rails.logger.info "Query Params: #{params.inspect}"
+    Rails.logger.info "Searching for movies with query: #{params[:query]}"
+
+    query = params.require(:query)
+
+    if query.blank?
+      render json: { error: "Query cannot be blank" }, status: :unprocessable_entity
+      return
+    end
+
+    movies = Movie.where("title ILIKE ?", "%#{params[:query]}%")
+
+    if movies.exists?
+      render json: MovieSerializer.new(movies).serializable_hash, status: :ok
+    else
+      render json: { error: "Movie not found" }, status: :not_found
+    end
+  rescue StandardError => e
+    Rails.logger.error "🔥 ERROR: #{e.message}"
+    render json: { error: e.message }, status: :bad_request
   end
 
   # ✅ CREATE MOVIE
@@ -15,10 +43,10 @@ class Api::V1::Admin::MoviesController < ApplicationController
     @movie = Movie.new(movie_params)
     if @movie.save
       render json: MovieSerializer.new(@movie), status: :created
-      puts @movie.errors.full_messages
+    #      puts @movie.errors.full_messages
     else
       render json: { errors: @movie.errors.full_messages.to_sentence }, status: :unprocessable_entity
-      puts @movie.errors.full_messages
+      #      puts @movie.errors.full_messages
     end
   end
 
@@ -57,6 +85,9 @@ class Api::V1::Admin::MoviesController < ApplicationController
 
   private
 
+  #  1️⃣ Where Should set_movie Be Used?
+  #  •	✅ update, destroy, restore → Needs set_movie (because they modify a specific movie).
+  #  •	❌ index, search → Should NOT use set_movie (because they retrieve multiple movies, not a specific one).
   def set_movie
     @movie = Movie.with_discarded.find_by(id: params[:id])
     # @movie = Movie.kept.find_by(id: params[:id])
